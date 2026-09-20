@@ -1,3 +1,6 @@
+//! IPv4：构造/解析固定 20 字节头（不含选项）、对首部求校验和、并按协议号分发负载。
+//! 本内核使用硬编码 IP、TTL=64、不分片、ID=1；协议号 1/6/17 分别对应 ICMP/TCP/UDP。
+//!
 //! IPv4: build/parse the fixed 20-byte header (no options), checksum the
 //! header, and demultiplex the payload by protocol number.
 

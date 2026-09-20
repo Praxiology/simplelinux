@@ -1,5 +1,10 @@
 //! Phase 6: virtual filesystem entry point.
 //!
+//! Phase 6：虚拟文件系统入口。负责把具体文件系统（devfs/procfs/initrd）挂到
+//! 全局挂载表，并提供系统调用依赖的一层文件描述符（fd）表：open/close 分配
+//! 描述符、read/write 移动字节并推进偏移、list_dir 枚举目录。权限直接由 Inode
+//! trait 表达：read/write 默认返回 PermissionDenied，只读文件不覆盖 write 即可。
+//!
 //! Wires the concrete filesystems into the global mount table and provides the
 //! small file-descriptor layer the syscalls sit on top of:
 //!   * [`open`] / [`close`]  - allocate a descriptor over a resolved inode

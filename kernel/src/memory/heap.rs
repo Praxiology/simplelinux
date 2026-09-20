@@ -1,5 +1,9 @@
 //! Kernel heap on top of `linked_list_allocator`.
 //!
+//! 内核堆：预先划出一段固定虚拟地址区间，逐页映射到刚分配的物理帧上，再把
+//! 这段连续内存交给链表式分配器管理。`init` 返回后，整个内核即可使用 `alloc`
+//! 提供的 `Vec`/`Box`/`String` 等堆类型。
+//!
 //! We carve out a fixed virtual range (`HEAP_START..HEAP_START + HEAP_SIZE`),
 //! back each page with a freshly allocated physical frame, then hand that
 //! contiguous region to the allocator. Once `init` returns, the `alloc` crate
@@ -11,6 +15,7 @@ use x86_64::VirtAddr;
 
 use super::vmm;
 
+/// 堆起始虚拟地址。选得远高于物理映射区与内核镜像，以避免与 bootloader 冲突。
 /// Virtual address at which the kernel heap starts.
 ///
 /// Chosen well above the physically-mapped region and the kernel image so it

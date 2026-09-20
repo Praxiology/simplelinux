@@ -1,4 +1,8 @@
 //! PIT (8253/8254) timer, programmed to fire IRQ0 at ~100 Hz.
+//!
+//! 8254 可编程间隔定时器：以 1.193182 MHz 为基准频率，给通道 0 写入分频数
+//! 后即可按设定频率周期性触发 IRQ0。本内核把它设为 100 Hz（每 10ms 一次），
+//! 每次中断令全局 tick 计数 +1，成为系统时钟与调度器抢占的心跳来源。
 
 use core::sync::atomic::{AtomicU64, Ordering};
 use x86_64::instructions::port::Port;
@@ -26,8 +30,9 @@ pub(crate) fn tick() {
 }
 
 /// Program PIT channel 0 to generate `HZ` interrupts per second.
+/// 配置 PIT 通道 0：基准频率除以分频数即得目标中断频率（每秒 HZ 次）。
 pub fn init() {
-    let divisor = (PIT_BASE_FREQUENCY / HZ) as u16; // 11931 -> ~100 Hz
+    let divisor = (PIT_BASE_FREQUENCY / HZ) as u16; // 11931 -> ~100 Hz 分频
     unsafe {
         let mut command = Port::<u8>::new(PIT_COMMAND);
         // Channel 0 data port must receive the low byte then the high byte as

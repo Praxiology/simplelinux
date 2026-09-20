@@ -1,3 +1,5 @@
+//! ICMP：只实现支撑 `ping` 所需的 echo request/reply。
+//!
 //! ICMP: just enough of echo request/reply to power `ping`.
 //!
 //! Echo message layout: `type[1] code[1] checksum[2] id[2] seq[2] data...`.

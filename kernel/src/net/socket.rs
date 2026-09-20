@@ -1,3 +1,8 @@
+//! BSD 风格 socket，架在网络栈之上并通过 VFS 暴露。“网络端点即文件”：一个 [`Socket`]
+//! 被包装成 [`SocketInode`]（`impl` Phase-6 的 [`Inode`] trait），于是普通的
+//! `read`/`write`/`close` 系统调用也能收发数据报；`bind`/`connect` 则通过新增的
+//! [`Inode::sock_index`] 钩子找到背后的 socket（靠 trait 多态，无需向下转型）。
+//!
 //! BSD-style sockets layered on the stack, exposed through the VFS.
 //!
 //! The teaching point is "a network endpoint is a file": a [`Socket`] is wrapped
@@ -112,6 +117,8 @@ pub fn info() -> Vec<(usize, u8, u16, Option<([u8; 4], u16)>, usize)> {
     }).collect()
 }
 
+/// 把一个 socket 槽包装成 [`Inode`]：这正是“网络即文件”得以成立的关键——普通 read/write/close
+/// 系统调用从此能直接收发数据报。
 /// An [`Inode`] view over a socket slot: this is what makes "network a file".
 pub struct SocketInode {
     idx: usize,

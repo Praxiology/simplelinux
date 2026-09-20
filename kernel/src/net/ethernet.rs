@@ -1,5 +1,9 @@
 //! Ethernet II: the 14-byte link-layer header and EtherType demultiplexing.
 //!
+//! 以太网 II：14 字节链路层头 + 按 EtherType 分发。帧布局为
+//! `dst[6] src[6] type[2] payload...`。因我们把自造的缓冲直接交给驱动，
+//! 故不追加以太网 FCS（e1000 会在发送时自行计算、接收时自行剥离）。
+//!
 //! Frame layout: `dst[6] src[6] type[2] payload...`. We hand our own buffer to
 //! the driver, so no Ethernet FCS is appended (the e1000 computes it on TX and
 //! strips it on RX).

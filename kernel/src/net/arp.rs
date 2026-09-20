@@ -1,5 +1,9 @@
 //! ARP: map IPv4 -> MAC, with a small learning cache.
 //!
+//! ARP：把 IPv4 地址映射到 MAC 地址，附带一个学习型缓存。（以太网头之后的）28 字节
+//! ARP 负载布局为 `htype[2] ptype[2] hlen plen oper[2] sha[6] spa[4] tha[6] tpa[4]`。
+//! 每当收到一个 ARP 帧就记录发送方的绑定；若请求目标是本方 IP，则回一个单播应答。
+//!
 //! The 28-byte ARP payload (after the Ethernet header) is:
 //! `htype[2] ptype[2] hlen plen oper[2] sha[6] spa[4] tha[6] tpa[4]`.
 

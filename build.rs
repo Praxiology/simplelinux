@@ -1,5 +1,9 @@
 //! Build script for the runner crate: compiles the kernel (via the `kernel`
 //! artifact dependency) and wraps the resulting ELF into a bootable BIOS image.
+//!
+//! runner crate 的构建脚本：通过 `kernel` 的 artifact 依赖编译出内核 ELF，再用
+//! `bootloader` 把它包装成可引导的 BIOS 磁盘镜像，并通过编译期环境变量 `BIOS_PATH`
+//! 把镜像路径暴露给 `src/main.rs`。
 use std::path::PathBuf;
 
 /// The `CARGO_BIN_FILE_*` env var name depends on the dependency alias and the

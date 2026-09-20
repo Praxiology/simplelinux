@@ -1,3 +1,6 @@
+//! UDP：无连接的数据报服务。其 8 字节头为 `sport[2] dport[2] length[2] checksum[2]`；
+//! 校验和除报文外还额外覆盖一个 12 字节的 IPv4 伪首部，以便发现误投的数据报。
+//!
 //! UDP: a connectionless datagram service. The 8-byte header is
 //! `sport[2] dport[2] length[2] checksum[2]`; the checksum additionally covers
 //! a 12-byte IPv4 pseudo-header so a misrouted datagram is detected.

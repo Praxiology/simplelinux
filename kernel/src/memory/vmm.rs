@@ -1,5 +1,10 @@
 //! Virtual memory manager: thin helpers over the active 4-level page table.
 //!
+//! 虚拟内存管理：在当前生效的 4 级页表（CR3）之上的一组薄封装。借助
+//! `OffsetPageTable`（物理内存已在高半区恒等映射）即可逐级遍历页表。我们
+//! 不长期持有 `&mut PageTable`（借用检查难以表达），而是每次需要时临时构造
+//! 一个映射器——单核内核下这样最简单且足够安全。
+//!
 //! The bootloader leaves us a valid PML4 in CR3 and maps all of physical memory
 //! at `PHYS_OFFSET`. `OffsetPageTable` uses exactly those two facts: it walks the
 //! page-table hierarchy by treating every table's *physical* frame as reachable
@@ -42,6 +47,7 @@ pub fn phys_offset() -> Option<VirtAddr> {
     }
 }
 
+/// 构造一个绑定到当前生效 PML4（CR3）的 `OffsetPageTable`。
 /// Build an `OffsetPageTable` bound to the *currently active* PML4 (CR3).
 ///
 /// # Safety
@@ -55,6 +61,7 @@ pub unsafe fn active_mapper<'a>() -> OffsetPageTable<'a> {
     OffsetPageTable::new(table, offset)
 }
 
+/// 将单个 4 KiB 页 `page` 映射到已选定的物理帧 `frame`（返回中间页表额外消耗的帧数供参考）。
 /// Map a single 4 KiB `page` to an already-chosen physical `frame`.
 ///
 /// Returns the number of extra frames consumed for intermediate page tables

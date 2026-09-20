@@ -1,5 +1,12 @@
 //! Phase 6: the "everything is a file" abstraction.
 //!
+//! Phase 6：“一切皆文件”抽象。两个 trait 驱动整个 VFS：
+//!   * `FileSystem` —— 可挂载的树，对外暴露一个根 `Inode`；
+//!   * `Inode`      —— 可读写/查找/列举的节点。
+//! 具体文件系统（devfs、procfs、initrd）通过 `impl` 这两个 trait 接入；挂载表 +
+//! `resolve` 把 `/dev/console` 这样的路径解析为 `Arc<dyn Inode>`。这种 trait 对象
+//! 设计正是真实内核把多种底层实现“抹平”到统一接口后面的做法。
+//!
 //! Two traits drive the whole VFS:
 //!   * [`FileSystem`] - a mountable tree exposing a single root [`Inode`].
 //!   * [`Inode`]      - a node that can be read/written/looked-up/listed.
@@ -114,6 +121,7 @@ fn longest_mount(path: &str) -> Option<(usize, Arc<dyn FileSystem>)> {
     best
 }
 
+/// 解析绝对路径：先匹配最长前缀的挂载点，再逐段通过 [`Inode::lookup`] 向下走。
 /// Resolve an absolute path to an inode by matching a mount then walking
 /// each `/`-separated component through [`Inode::lookup`].
 pub fn resolve(path: &str) -> FsResult<Arc<dyn Inode>> {

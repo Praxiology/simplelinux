@@ -1,5 +1,10 @@
 //! Task context switching.
 //!
+//! 任务上下文切换。采用经典的“保存被调用者保存寄存器 + 栈指针，再恢复下一个
+//! 任务的”方案：每个任务只需记住自己的 `rsp`，六个被调用者保存寄存器（rbx、rbp、
+//! r12..r15）压在各任务自己的内核栈上，指令指针则由栈上的返回地址隐式携带。
+//! 本阶段只切换内核栈（不改 CR3）：所有任务共享内核地址空间，即“纯内核任务”里程碑。
+//!
 //! We switch contexts with the classic "save callee-saved registers + stack
 //! pointer, restore the next task's" scheme. Only `rsp` needs to be remembered
 //! per task: the six callee-saved registers (`rbx`, `rbp`, `r12`..`r15`) are

@@ -1,5 +1,11 @@
 //! Phase 5: user mode entry + `int 0x80` system calls.
 //!
+//! Phase 5：进入用户态（ring 3）与 `int 0x80` 系统调用。系统调用 ABI（自定，刻意
+//! 仿 Linux）：调用方执行 `int 0x80`，`rax` 传调用号，参数在 `rdi/rsi/rdx`，返回值
+//! 放 `rax`（负数即 errno）。进入 ring 3 用 `iretq`；从系统调用返回则借助 TSS 中
+//! 配好的 RSP0 内核栈。通过 `exit` 退出的用户程序会直接跳回 `enter_user_asm` 记录的
+//! 内核栈，unwind 回调用处。
+//!
 //! Syscall ABI (our own, deliberately Linux-like):
 //!   * call:   `int 0x80` with `rax` = number, args in `rdi, rsi, rdx`
 //!   * return: `rax` = result (negative = error)
@@ -125,6 +131,7 @@ pub fn entry_addr() -> u64 {
     __syscall_entry as *const () as usize as u64
 }
 
+/// 从 ring-3 处理程序分发一次系统调用：按 `rax` 调用号路由到对应 `sys_*`，把结果写回 `rax`。
 /// Dispatch one syscall from the ring-3 handler. `frame` points at saved GPRs.
 ///
 /// # Safety
@@ -244,6 +251,7 @@ pub fn init() {
     crate::println!("[syscall] int 0x80 gate installed, SMAP disabled");
 }
 
+/// 装载并运行一个用户 ELF 直到其 `exit`，然后返回调用处。
 /// Load + run a user ELF to completion, then return to the caller.
 ///
 /// # Safety

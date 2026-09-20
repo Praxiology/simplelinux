@@ -1,5 +1,10 @@
 //! GDT + TSS setup.
 //!
+//! 全局描述符表（GDT）与任务状态段（TSS）。GDT 定义各代码/数据段选择子，
+//! 决定 CPU 运行在特权级 0（内核）还是 3（用户）；TSS 提供两类特殊栈：
+//!   * RSP0（`privilege_stack_table[0]`）：用户态经 `int 0x80` 陷入内核时切换到的内核栈；
+//!   * IST（`interrupt_stack_table[0]`）：双重故障时使用的独立备用栈。
+//!
 //! The bootloader already runs with `CS = 0x8`, `DS/SS = 0x10`. Our own GDT must
 //! therefore place a kernel code segment at selector `0x8` and a kernel data
 //! segment at `0x10` (otherwise interrupt gates, which reference selector `0x8`,
@@ -73,6 +78,7 @@ lazy_static! {
     };
 }
 
+/// 用户态代码段选择子（RPL 3），供 `iretq` 加载以进入 ring 3。
 /// User-mode code selector (RPL 3) to load via `iretq`.
 pub fn user_code_selector() -> u16 {
     GDT.1.user_code.0 | 0x3
@@ -88,6 +94,7 @@ pub fn kernel_code_selector() -> u16 {
     GDT.1.code.0
 }
 
+/// 加载 GDT、重载代码/数据段寄存器、并加载 TSS（完成特权级基础设施）。
 /// Load the GDT, reload the code/data segment registers, and load the TSS.
 pub fn init() {
     GDT.0.load();

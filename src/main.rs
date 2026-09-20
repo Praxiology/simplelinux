@@ -1,5 +1,9 @@
 //! Runner entry point (host side): launches QEMU with the BIOS disk image that
 //! `build.rs` produced from the kernel. This is what `make run` invokes.
+//!
+//! 宿主侧 runner 入口（`make run` 实际执行的就是它）：用 `build.rs` 生成的 BIOS
+//! 镜像拉起 QEMU，拼上内存/串口/网卡等参数；末尾把客户机经 isa-debug-exit 端口写入的
+//! 退出码翻译成宿主的 exit code。
 use std::process::exit;
 
 fn main() {

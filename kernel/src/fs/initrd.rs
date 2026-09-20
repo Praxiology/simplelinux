@@ -1,5 +1,10 @@
 //! Phase 6: `initrd` — a read-only filesystem parsed from a ustar tarball.
 //!
+//! Phase 6：`initrd`——从 ustar tar 归档解析出的只读文件系统。我们内嵌一个小
+//! `initrd.tar`（见 `tools/make_initrd.py`），init 时遍历其 512 字节头部，在内存中
+//! 构建一棵 [`Inode`] 树。这就是经典的“初始内存盘”：真实磁盘格式被解析成与
+//! devfs/procfs 相同的 VFS trait，因此构建期打包的文件与合成文件在访问上毫无差别。
+//!
 //! We embed a small `initrd.tar` (see `tools/make_initrd.py`) and, at init,
 //! walk its 512-byte headers to build an in-memory tree of [`Inode`]s. This is
 //! the classic "initial ramdisk": a real on-disk format, parsed into the same
@@ -84,6 +89,7 @@ struct Entry {
     is_dir: bool,
 }
 
+/// 遍历 ustar 归档：每 512 字节为一个头部，解出名称/大小/类型，依次收集文件与目录项。
 /// Walk a ustar archive, returning regular-file and directory entries.
 fn parse(tar: &[u8]) -> Vec<Entry> {
     let mut out = Vec::new();

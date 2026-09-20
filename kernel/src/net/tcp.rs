@@ -1,3 +1,5 @@
+//! TCP：一个刻意极简、教学级的骨架。
+//!
 //! TCP: a deliberately minimal, teaching-grade skeleton.
 //!
 //! We model the connection as an explicit [`TcpState`] state machine (the point
@@ -53,6 +55,7 @@ fn flag_names(f: u16) -> &'static str {
     }
 }
 
+/// 构造一个 20 字节 TCP 段（后附负载）并算出正确校验和（伪首部同 UDP，仅协议号换为 TCP）。
 /// Build a 20-byte TCP segment (payload appended) with a correct checksum.
 fn segment(sport: u16, dport: u16, seq: u32, ack: u32, flags: u16, payload: &[u8], dst: [u8; 4]) -> Vec<u8> {
     let mut t = Vec::with_capacity(HEADER_LEN + payload.len());

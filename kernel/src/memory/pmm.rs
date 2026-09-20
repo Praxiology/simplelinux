@@ -1,5 +1,10 @@
 //! Physical memory manager: a bitmap frame allocator.
 //!
+//! 物理内存管理：位图式帧分配器。每个 4 KiB 物理帧用 1 bit 标记（1=已用，0=空闲），
+//! 分配即“找到第一个为 0 的 bit”。位图初值全 1（保守：只有 `mark_free_range`
+//! 明确释放的帧才会被分配），再从固件内存图把可用区段释放。相比空闲链表，
+//! 位图是教学上最直观的实现。
+//!
 //! We track every 4 KiB physical frame with a single bit (1 = used, 0 = free).
 //! The whole physical RAM is mapped in the upper half of the address space by
 //! the bootloader (see `BootInfo::physical_memory_offset`), so from now on a
@@ -29,10 +34,12 @@ pub const NUM_FRAMES: usize = MAX_PHYS / PAGE_SIZE as usize;
 /// Number of `u64` words needed to store `NUM_FRAMES` bits.
 const WORDS: usize = NUM_FRAMES / 64;
 
+/// 保守型位图分配器：所有 bit 初始置 1（已用），只有被显式释放的帧才可分配。
 /// A conservative bitmap allocator. All bits start set (`used`), so a frame is
 /// only ever handed out after `mark_free` explicitly releases it.
 pub struct BitmapFrameAllocator {
     used: [u64; WORDS],
+    /// 轮转提示：下次分配从该字开始扫描，避免总从帧 0 重新扫描。
     /// Round-robin hint so repeated allocations don't rescan from frame 0.
     next_word: usize,
 }
@@ -93,6 +100,7 @@ impl BitmapFrameAllocator {
         }
     }
 
+    /// 找到第一个空闲帧，标记为已用并返回。
     /// Find the first free frame, mark it used, and return it.
     fn alloc_frame(&mut self) -> Option<PhysFrame<Size4KiB>> {
         for wi in 0..WORDS {
@@ -149,6 +157,7 @@ impl FrameDeallocator<Size4KiB> for BitmapFrameAllocator {
     }
 }
 
+/// 全局唯一的帧分配器，由自旋锁保护（单核内核）。
 /// The single global frame allocator, guarded by a spin lock (UP kernel).
 pub static FRAME_ALLOCATOR: Mutex<BitmapFrameAllocator> =
     Mutex::new(BitmapFrameAllocator::new());

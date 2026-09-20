@@ -1,5 +1,9 @@
 //! Phase 7: PS/2 keyboard driver (IRQ1).
 //!
+//! Phase 7：PS/2 键盘驱动（IRQ1）。每次 IRQ1 从端口 `0x60` 读一个 scancode 字节，
+//! 送入 `pc-keyboard` 状态机（扫描码集 1、US 104 键布局）解码，把得到的 ASCII
+//! 字符压入环形缓冲。`devfs` 把该缓冲暴露为 `/dev/kbd`，于是 `read` 系统调用就能取到按键。
+//!
 //! On every IRQ1 we read one scancode byte from port `0x60`, run it through the
 //! `pc-keyboard` state machine (scancode set 1, US 104-key layout), and push the
 //! decoded ASCII character onto a ring buffer. `devfs` exposes that buffer as
@@ -16,6 +20,7 @@ use x86_64::instructions::port::Port;
 
 type Kbd = Keyboard<layouts::Us104Key, ScancodeSet1>;
 
+/// 键盘驱动状态：解码器 + 已解码字符的环形缓冲。
 struct KeyboardState {
     decoder: Kbd,
     buffer: VecDeque<u8>,
@@ -36,6 +41,7 @@ impl KeyboardState {
 }
 
 lazy_static! {
+    /// 全局键盘状态，`Mutex` 保护（中断与读操作共享）。
     static ref KEYBOARD: Mutex<KeyboardState> = Mutex::new(KeyboardState::new());
 }
 

@@ -1,3 +1,5 @@
+//! 任务抽象：任务的身份（TaskId）、生命周期状态机，以及每任务独立的内核栈。
+//!
 //! Task abstraction: identity, state machine, and per-task kernel stack.
 
 use alloc::boxed::Box;
@@ -13,6 +15,7 @@ pub struct TaskId(pub u32);
 /// A task body: a `'static` closure run once on the task's kernel stack.
 pub type TaskFn = Box<dyn FnOnce() + Send>;
 
+/// 任务的协作式 + 抢占式生命周期：Ready（就绪）→ Running（运行）→ Blocked（阻塞）→ Zombie（僵尸）。
 /// Cooperative + preemptive lifecycle of a task.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TaskState {
@@ -85,6 +88,7 @@ impl KernelStack {
     }
 }
 
+/// 一个可调度的内核任务：持有身份、状态、阻塞原因、上下文、时间片与专属内核栈。
 /// A single schedulable kernel task.
 pub struct Task {
     pub id: TaskId,

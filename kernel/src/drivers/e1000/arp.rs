@@ -1,3 +1,6 @@
+//! Phase 7/8：ARP 帧构造 + 网卡冒烟测试，架在 e1000 的原始字节管道
+//! [`super::send`] / [`super::poll_receive`] 之上。
+//!
 //! Phase 7/8: ARP frame construction + the NIC smoke test, layered on the raw
 //! e1000 [`super::send`] / [`super::poll_receive`] byte pipes.
 

@@ -1,5 +1,11 @@
 //! Phase 8: a small, hand-written, layered TCP/IP stack.
 //!
+//! Phase 8：一个小型、手写、分层的 TCP/IP 协议栈。它直接架在轮询式 e1000
+//! 字节管道（`drivers::e1000::send` / `poll_receive`）之上，使每一层都清晰可见：
+//! 应用(shell/socket) → 传输(UDP/TCP 骨架) → 网络(IPv4+ICMP) → 链路(Ethernet+ARP) → 驱动。
+//! 入站帧自底向上解码并按 EtherType / IP 协议号分发，出站包自顶向下构造。RX 方向
+//! 被 Phase-8 自检完整演练；TX 方向字节正确但在此 QEMU 上无法在线上观测（见 e1000 TX 说明）。
+//!
 //! It sits directly on the polled e1000 byte pipes ([`crate::drivers::e1000::send`]
 //! / [`crate::drivers::e1000::poll_receive`]) so every layer is visible:
 //!
@@ -40,6 +46,7 @@ pub fn init() {
         IP[0], IP[1], IP[2], IP[3], GATEWAY[0], GATEWAY[1], GATEWAY[2], GATEWAY[3]);
 }
 
+/// RFC 1071 反码求和校验：16 位一字相加、进位回卷、最后取反。IPv4/ICMP/UDP/TCP 均用之。
 /// The RFC 1071 ones-complement internet checksum (used by IPv4, ICMP, UDP, TCP).
 pub fn checksum(data: &[u8]) -> u16 {
     let mut sum: u32 = 0;

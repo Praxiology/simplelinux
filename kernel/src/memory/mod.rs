@@ -1,5 +1,10 @@
 //! Phase 3: memory management.
 //!
+//! Phase 3：内存管理。子模块自底向上为：
+//!   * `pmm`  —— 基于位图的物理帧分配器；
+//!   * `vmm`  —— 在当前 4 级页表上做映射的薄封装；
+//!   * `heap` —— 架在 linked_list_allocator 上的内核堆。
+//!
 //! Initialization order matters and is fixed here:
 //!   1. record the physical-memory offset (from BootInfo),
 //!   2. build the physical frame allocator from the memory map,
@@ -17,6 +22,7 @@ use bootloader_api::{
 };
 use x86_64::VirtAddr;
 
+/// 初始化内存子系统：记录物理内存偏移→构建帧分配器→映射并启用内核堆。
 /// Set up physical frame tracking and the kernel heap.
 pub fn init(boot_info: &'static mut BootInfo) {
     // 1. Where did the bootloader map all of physical memory?

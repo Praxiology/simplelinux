@@ -1,5 +1,9 @@
 //! Phase 6: `devfs` — device files behind the VFS interface.
 //!
+//! Phase 6：`devfs`——把设备伪装成文件接入 VFS。挂载在 `/dev`：写 `/dev/console`
+//! 直达串口；`/dev/null` 吞掉一切；`/dev/zero` 读出无限 `\0`；键盘输入 `/dev/kbd`
+//! 在 Phase 7 接入。它们都是无状态结构体，靠 `impl Inode` 提供各自的读写行为。
+//!
 //! Mounted at `/dev`. Writing to `/dev/console` goes to the serial port;
 //! `/dev/null` swallows everything; `/dev/zero` yields infinite `\0` on read.
 //! Keyboard input (`/dev/kbd`) arrives in Phase 7.

@@ -1,5 +1,10 @@
 //! IDT (interrupt descriptor table): CPU exceptions + hardware IRQ handling.
 //!
+//! 中断描述符表（IDT）：把每个中断向量绑定到对应的处理函数，同时处理
+//! CPU 异常（断点、双重故障、缺页、一般保护错误）与硬件 IRQ。我们先重映射
+//! 8259 PIC，使 IRQ0..15 对应向量 32..47（避开 0..31 的 CPU 异常），再注册
+//! 定时器 IRQ0、键盘 IRQ1 以及供用户态 `int 0x80` 陷入的系统调用门（DPL=3）。
+//!
 //! We remap the 8259 PIC so IRQ0..15 map to interrupt vectors 32..47 (leaving
 //! 0..31 for CPU exceptions), then register handlers for a few exceptions and
 //! the timer IRQ.
@@ -56,6 +61,7 @@ lazy_static! {
     };
 }
 
+/// 加载 IDT、重映射并初始化 PIC、开启硬件中断（总入口）。
 /// Load the IDT, remap + initialize the PIC, and enable hardware interrupts.
 pub fn init() {
     IDT.load();
@@ -112,8 +118,8 @@ extern "x86-interrupt" fn page_fault_handler(
 }
 
 extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFrame) {
-    // Advance the clock and give the scheduler a chance to preempt. Handlers
-    // must stay silent (no println!) to avoid deadlocking on the serial lock.
+    // 推进系统时钟并给调度器一次抢占机会。中断处理必须保持安静（不 println!），
+    // 否则会与串口锁死锁。Advance the clock and give the scheduler a chance to preempt.
     timer::tick();
     crate::process::tick();
     unsafe {

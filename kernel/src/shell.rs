@@ -1,5 +1,12 @@
 //! Phase 8: a tiny interactive shell running as a kernel task.
 //!
+//! Phase 8：以内核任务形式运行的迷你交互式 shell。计划里写的是 ring3 的
+//! `user/bin/shell.rs`，但本内核的用户程序是手写的固定 ELF（见 `tools/*.py`），
+//! 在其上做交互式 read-eval 循环并不现实；因此 shell 住在内核里，经 VFS 从
+//! `/dev/kbd` 读按键——这对教学内核是诚实且可演示的等价实现。内置命令直接
+//! 复用 Phase 3–8 建好的子系统（`free`→PMM/堆、`ps`→调度器、`ls`/`cat`→VFS、
+//! `ping`/`netstat`→网络栈）。
+//!
 //! The plan sketches a ring-3 `user/bin/shell.rs`, but our user programs are
 //! hand-assembled fixed ELFs (see `tools/*.py`) — an interactive read-eval loop
 //! is impractical there. So the shell lives in the kernel and reads keystrokes
@@ -12,6 +19,8 @@ use alloc::vec::Vec;
 
 use crate::{fs, memory, net, process};
 
+/// 作为任务的入口：逐字符从 `/dev/kbd` 拼成命令行并执行，直到 `exit` 或输入长时间空闲
+/// （以便脚本化注入的按键能干净收尾）。
 /// Entry point run as a task. Reads lines from `/dev/kbd` until `exit` or the
 /// input goes idle (so a scripted key injection terminates cleanly).
 pub fn run() {
@@ -60,6 +69,7 @@ pub fn run() {
     fs::close(fd).ok();
 }
 
+/// 执行一行命令（按空白切分为命令名 + 参数并分发）；当应当退出 shell 时返回 true。
 /// Run one command line; returns true if the shell should quit.
 fn eval(line: &[u8]) -> bool {
     let text = core::str::from_utf8(line).unwrap_or("");
@@ -87,12 +97,14 @@ fn eval(line: &[u8]) -> bool {
     false
 }
 
+/// help：列出所有内置命令。
 fn cmd_help() {
     crate::println!(
         "commands: help echo ls cat ps free ifconfig arp netstat ping net exit"
     );
 }
 
+/// ls [路径]：列出目录项（缺省为根目录）。
 fn cmd_ls(args: &[&str]) {
     let path = args.first().copied().unwrap_or("/");
     match fs::list_dir(path) {
@@ -101,6 +113,7 @@ fn cmd_ls(args: &[&str]) {
     }
 }
 
+/// cat 路径：打开并读到 EOF，原样打印内容。
 fn cmd_cat(args: &[&str]) {
     let path = match args.first() {
         Some(p) => *p,
@@ -128,6 +141,7 @@ fn cmd_cat(args: &[&str]) {
     crate::print!("{}", out);
 }
 
+/// ps：打印调度器的任务快照（pid 与状态）。
 fn cmd_ps() {
     crate::println!("[pid] state");
     for (id, st) in process::snapshot() {
@@ -135,6 +149,7 @@ fn cmd_ps() {
     }
 }
 
+/// free：打印内核堆用量与空闲物理帧数。
 fn cmd_free() {
     let frames = memory::pmm::FRAME_ALLOCATOR.lock().free_count();
     crate::println!(
@@ -146,6 +161,7 @@ fn cmd_free() {
     );
 }
 
+/// ifconfig：打印 e1000 的 IP/网关/MAC。
 fn cmd_ifconfig() {
     let mac = net::our_mac();
     crate::println!(
@@ -156,6 +172,7 @@ fn cmd_ifconfig() {
     );
 }
 
+/// arp -a：打印 ARP 缓存表。
 fn cmd_arp() {
     let t = net::arp::table();
     if t.is_empty() {
@@ -171,6 +188,7 @@ fn cmd_arp() {
     }
 }
 
+/// netstat：打印 socket 表（协议/本地端口/对端/队列）。
 fn cmd_netstat() {
     crate::println!("  proto  local  peer            queue");
     for (idx, proto, port, peer, q) in net::socket::info() {
@@ -183,6 +201,7 @@ fn cmd_netstat() {
     }
 }
 
+/// ping a.b.c.d：解析 IP，先解析网关 MAC，再发 3 个 ICMP echo 并 pump 收包。
 fn cmd_ping(args: &[&str]) {
     let dst = match args.first().copied().and_then(parse_ip) {
         Some(ip) => ip,

@@ -2,6 +2,13 @@
 #![no_main]
 #![feature(abi_x86_interrupt)]
 
+//! SimpleLinux 内核入口。
+//!
+//! 本文件是整台“操作系统”的总装线：`kernel_main` 按依赖顺序自底向上初始化
+//! 各个子系统（串口 → GDT/IDT → 内存 → 定时器 → 系统调用 → VFS → 驱动 →
+//! 网络栈），并依次运行每个 Phase 的自检 demo，最后交出控制权给调度器。
+//! 由于是教学内核，初始化次序被刻意写死且集中于此，便于对照阅读。
+
 extern crate alloc;
 
 mod fs;
@@ -23,6 +30,7 @@ use bootloader_api::{
 };
 use core::panic::PanicInfo;
 
+/// 串口打印宏：把格式化文本路由到 `serial::_print`（输出到 COM1）。
 #[macro_export]
 macro_rules! print {
     ($($arg:tt)*) => {{
@@ -38,6 +46,8 @@ macro_rules! println {
 
 /// Ask the bootloader to map all of physical memory so the kernel can access
 /// frames and page tables directly (required by Phase 3's memory manager).
+/// 引导配置：请求 bootloader 把全部物理内存映射进高半区，内核由此可直接访问
+/// 物理帧与页表（Phase 3 内存管理器依赖此）；同时加大内核栈以适配 debug 构建。
 pub static BOOTLOADER_CONFIG: BootloaderConfig = {
     let mut config = BootloaderConfig::new_default();
     config.mappings.physical_memory = Some(Mapping::Dynamic);
@@ -48,6 +58,7 @@ pub static BOOTLOADER_CONFIG: BootloaderConfig = {
 
 entry_point!(kernel_main, config = &BOOTLOADER_CONFIG);
 
+/// 内核主函数：bootloader 以此进入 Rust 世界，永不返回（最后交给调度器）。
 fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
     serial::init();
 
@@ -104,6 +115,7 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
+    // 全局 panic 处理：把出错信息打到串口后停机（hlt），避免故障被静默吞掉。
     println!("\n!!! KERNEL PANIC !!!");
     println!("{}", info);
     loop {
@@ -111,6 +123,7 @@ fn panic(info: &PanicInfo) -> ! {
     }
 }
 
+/// Phase 3 冒烟自检：演练物理帧分配器与内核堆（与下方英文注释一致）。
 /// Phase 3 smoke tests: exercise the frame allocator and the heap.
 fn memory_self_test() {
     use alloc::{vec, vec::Vec};

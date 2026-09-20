@@ -1,5 +1,9 @@
 //! Phase 6: `procfs` — synthetic files over live kernel state.
 //!
+//! Phase 6：`procfs`——叠在实时内核状态上的“合成文件”。挂载在 `/proc`，不存储
+//! 任何数据：每次读文件时都从运行中的内核现场重新生成文本（如 Phase 3 的堆/帧
+//! 统计、Phase 2 的 tick 数）。这展示了 VFS 如何让“信息”看起来与“文件”完全一样。
+//!
 //! Mounted at `/proc`. Nothing is stored: reading a file regenerates its text
 //! from the running kernel (Phase 3 heap/frame stats, Phase 2 tick count). This
 //! shows how the VFS lets "information" look exactly like "files".
@@ -45,6 +49,7 @@ impl Inode for ProcDir {
     }
 }
 
+/// 只读合成文件：内容不存储，每次读取时由函数指针 `gen` 按需生成。
 /// A read-only synthetic file whose bytes are produced on demand by `gen`.
 struct ProcFile {
     gen: fn() -> String,

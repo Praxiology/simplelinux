@@ -1,5 +1,10 @@
 //! Minimal ELF64 loader for Phase 5.
 //!
+//! 极简 ELF64 装载器：只需理解 `tools/gen_hello_elf.py` 产出的格式（静态、非
+//! 可重定位、带 `PT_LOAD` 段的 ELF64）——遍历程序头表，把每个可装载段以
+//! `USER_ACCESSIBLE` 位映射进当前（内核）页表，再把文件字节拷贝进去。
+//! 用户程序与内核共享同一地址空间（低半区为用户、高半区为内核），以此保持简单。
+//!
 //! We only understand what our `tools/gen_hello_elf.py` produces (and, more
 //! generally, static non-relocatable ELF64 with `PT_LOAD` segments): walk the
 //! program headers, map each loadable segment page into the current (kernel)

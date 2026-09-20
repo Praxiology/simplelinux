@@ -1,5 +1,10 @@
 //! Round-robin scheduler for kernel tasks.
 //!
+//! 面向内核任务的轮转（round-robin）调度器（单核，故“并发”实为交替执行）。
+//! 关键设计：任务存于 `Vec<Option<Task>>` 的稳定槽位中（槽位下标不会因
+//! 扩容而变，故切换前拿到的 `TaskContext` 指针始终有效）；调度器锁绝不
+//! 跨越 `__switch` 持有（否则恢复时重入 schedule 会死锁）；整个切换期间关闭中断。
+//!
 //! Design notes (single-core / UP, so "concurrency" is really interleaving):
 //!
 //! * Tasks live in a `Vec<Option<Task>>` of *stable slots*. A slot index never
@@ -116,6 +121,7 @@ pub fn init() {
     ACTIVE.store(true, Ordering::Relaxed);
 }
 
+/// 新建一个内核任务并加入就绪队列（由调度器分配唯一 TaskId）。
 /// Add a kernel task to the run queue.
 pub fn spawn(func: impl FnOnce() + Send + 'static) -> TaskId {
     let mut g = SCHEDULER.lock();
@@ -138,6 +144,7 @@ pub fn start() -> ! {
     idle();
 }
 
+/// 选出下一个可运行任务并切换过去；被重新调度时才返回。
 /// Choose the next runnable task and switch to it; returns when rescheduled.
 fn schedule() {
     // Remember the caller's interrupt state: when preempted from the timer ISR
@@ -279,6 +286,7 @@ pub fn current_task_body() -> ! {
     idle();
 }
 
+/// 由定时器中断调用：唤醒到期睡眠者，并为运行中任务扣减时间片（用尽则抢占）。
 /// Called from the timer ISR: wake sleepers and account for time slices.
 pub fn tick() {
     if !active() {
