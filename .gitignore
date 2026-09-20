@@ -1,0 +1,7 @@
+target/
+*.iso
+*.bin
+
+# Generated user artifacts (produced by tools/*.py)
+/user/*.elf
+/user/*.tar

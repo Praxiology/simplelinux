@@ -1,0 +1,21 @@
+# The workspace root doubles as the "runner" crate (`simplelinux`): a host-side
+# program that builds the kernel, wraps it in a bootable BIOS disk image via the
+# `bootloader` crate, and launches QEMU.
+[workspace]
+resolver = "2"
+members = ["kernel", "user"]
+
+[package]
+name = "simplelinux"
+version = "0.1.0"
+edition = "2021"
+
+[build-dependencies]
+kernel = { path = "kernel", artifact = "bin", target = "x86_64-unknown-none" }
+bootloader = "0.11"
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

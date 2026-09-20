@@ -1,0 +1,7 @@
+[package]
+name = "simplelinux-user"
+version = "0.1.0"
+edition = "2021"
+
+# User-space programs: no_std, no bootloader (they are loaded by the kernel).
+[dependencies]

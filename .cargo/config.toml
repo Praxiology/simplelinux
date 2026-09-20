@@ -1,0 +1,4 @@
+# Enable cargo artifact-dependencies (unstable), used by the root runner crate
+# to build the `kernel` crate for x86_64-unknown-none and embed its ELF.
+[unstable]
+bindeps = true
