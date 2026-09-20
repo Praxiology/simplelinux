@@ -78,7 +78,8 @@ simplelinux/            # workspace root，同时是 host runner（build.rs 产�
 ├── tools/              # gen_hello_elf.py / gen_vfs_elf.py / make_initrd.py
 ├── src/main.rs         # runner：拼 BIOS 镜像并 exec QEMU
 ├── build.rs Cargo.toml Makefile rust-toolchain.toml .cargo/config.toml
-└── docs/ tests/        # 预留
+├── docs/               # 操作手册.md、开发历程.md
+└── tests/              # 预留
 ```
 
 ## 五、测试脚本
@@ -99,9 +100,12 @@ simplelinux/            # workspace root，同时是 host runner（build.rs 产�
 
 ## 七、详细文档
 
-完整《操作手册》（各功能点的前置条件、运行步骤、测试用例、预期效果与排障表）随仓库分发：
+仓库内 `docs/` 随仓库分发两份文档：
 
-> 见仓库内文件 **[docs/操作手册.md](docs/操作手册.md)**（在 IDE 中亦可通过 RepoWiki / 知识库查看同名《操作手册》）。
+- **[docs/操作手册.md](docs/操作手册.md)** —— 面向使用/测试：各功能点的前置条件、运行步骤、测试用例、预期效果与排障表。
+- **[docs/开发历程.md](docs/开发历程.md)** —— 面向考古/贡献：从目标到 Phase 8 的探索过程、架构取舍与关键踩坑史。
+
+（在 IDE 中亦可通过 RepoWiki / 知识库查看同名《操作手册》。）
 
 ## 八、版本管理
 
