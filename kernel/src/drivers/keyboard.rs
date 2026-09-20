@@ -67,6 +67,16 @@ pub fn inject(scancodes: &[u8]) {
     }
 }
 
+/// Test hook: queue a whole ASCII string as if it were typed. Bypasses the
+/// scancode decoder so a scripted command line (e.g. driving the Phase-8 shell)
+/// is fully deterministic in headless QEMU.
+pub fn inject_str(s: &str) {
+    let mut kb = KEYBOARD.lock();
+    for ch in s.chars() {
+        push(&mut kb.buffer, ch as u32);
+    }
+}
+
 /// Queue a decoded code point (ASCII range only for this teaching kernel).
 fn push(buf: &mut VecDeque<u8>, cp: u32) {
     if cp < 0x80 {

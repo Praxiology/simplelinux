@@ -11,5 +11,5 @@ pub mod scheduler;
 pub mod task;
 
 pub use scheduler::{
-    init, join, sleep, spawn, start, task_count, tick, yield_now,
+    init, join, sleep, snapshot, spawn, start, task_count, tick, yield_now,
 };

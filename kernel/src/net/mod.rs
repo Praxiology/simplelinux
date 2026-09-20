@@ -71,11 +71,6 @@ pub fn pump() -> usize {
     n
 }
 
-/// Push a finished Ethernet frame to the wire.
-pub fn transmit_frame(frame: &[u8]) -> bool {
-    e1000::send(frame)
-}
-
 /// Our own MAC, or all-zero if the NIC never came up.
 pub fn our_mac() -> MacAddr {
     MacAddr(e1000::mac_address().unwrap_or([0; 6]))

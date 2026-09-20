@@ -21,7 +21,7 @@ use spin::Mutex;
 use devfs::DevFs;
 use initrd::Initrd;
 use procfs::ProcFs;
-use vfs::{File, FsError, FsResult};
+use vfs::{File, FsError, FsResult, Inode};
 
 /// Embedded initial ramdisk (ustar), produced by `tools/make_initrd.py`.
 pub static INITRD: &[u8] = include_bytes!("../../../user/initrd.tar");
@@ -101,4 +101,15 @@ pub fn close(fd: usize) -> FsResult<()> {
 /// List the entries of directory `path`.
 pub fn list_dir(path: &str) -> FsResult<Vec<String>> {
     vfs::resolve(path)?.list_dir()
+}
+
+/// Install an already-resolved inode (e.g. a network socket) as a new fd.
+pub fn install_inode(inode: Arc<dyn Inode>) -> FsResult<usize> {
+    install(File { inode, offset: 0 }).ok_or(FsError::NoSpace)
+}
+
+/// If `fd` refers to a socket, return its socket-table index (for bind/connect).
+pub fn sock_index(fd: usize) -> Option<usize> {
+    let t = FD_TABLE.lock();
+    t.get(fd)?.as_ref().and_then(|f| f.inode.sock_index())
 }

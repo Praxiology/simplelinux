@@ -73,6 +73,12 @@ pub trait Inode: Send + Sync {
     fn list_dir(&self) -> FsResult<Vec<String>> {
         Err(FsError::NotDir)
     }
+    /// Network sockets override this to expose their socket-table index so the
+    /// `bind`/`connect` syscalls can find them through the fd (trait polymorphism
+    /// instead of downcasting). Regular files return `None`.
+    fn sock_index(&self) -> Option<usize> {
+        None
+    }
 }
 
 /// A mountable filesystem that exposes a root inode.

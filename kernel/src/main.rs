@@ -9,8 +9,10 @@ mod drivers;
 mod gdt;
 mod interrupts;
 mod memory;
+mod net;
 mod process;
 mod serial;
+mod shell;
 mod syscall;
 mod timer;
 mod vga;
@@ -91,6 +93,10 @@ fn kernel_main(boot_info: &'static mut BootInfo) -> ! {
     // Phase 7: bring up device drivers (keyboard + e1000) and smoke-test them.
     phase7_setup();
     phase7_demo();
+
+    // Phase 8: bring up the network stack, self-test it, and queue a scripted
+    // shell session (the shell task consumes it once the scheduler starts).
+    phase8_setup();
 
     println!("[main] spawning Phase 4 demo tasks and starting scheduler");
     phase4_demo()
@@ -233,6 +239,8 @@ fn phase4_demo() -> ! {
     // e1000 ARP demo runs as a task so it can `sleep` while waiting for the
     // reply to come back over the (emulated) wire.
     process::spawn(|| drivers::e1000::demo_arp());
+    // Phase 8: an interactive shell task reading the (scripted) keyboard input.
+    process::spawn(shell::run);
     process::start()
 }
 
@@ -303,4 +311,16 @@ fn phase7_demo() {
         }
         Err(e) => println!("[kbd-test] open /dev/kbd -> {:?}", e),
     }
+}
+
+/// Phase 8: bring up the network stack, run the layered self-test, and queue a
+/// scripted shell session for the shell task to replay once we start scheduling.
+fn phase8_setup() {
+    println!("[main] Phase 8: bringing up the network stack");
+    net::init();
+    net::demo();
+    println!("[main] Phase 8: queuing a scripted shell session");
+    drivers::keyboard::inject_str(
+        "help\nifconfig\narp -a\nnetstat\nping 10.0.2.2\nfree\nps\nls /initrd\ncat /initrd/motd.txt\nexit\n",
+    );
 }

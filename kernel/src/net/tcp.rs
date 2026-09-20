@@ -23,7 +23,10 @@ const ACK: u16 = 0x10;
 
 /// The connection lifecycle. Newtype-per-state data (the `{ .. }` variants in
 /// the plan) is collapsed to the essentials here to stay within the teaching
-/// line budget, but the transitions are the real TCP ones.
+/// line budget, but the transitions are the real TCP ones. We only drive a
+/// Listen->SynReceived step in the demo, so the full enum is documentation of
+/// the protocol (hence `allow(dead_code)`).
+#[allow(dead_code)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum TcpState {
     Closed,
@@ -76,6 +79,7 @@ fn segment(sport: u16, dport: u16, seq: u32, ack: u32, flags: u16, payload: &[u8
 }
 
 /// Send a bare TCP segment (used by the handshake demo).
+#[allow(dead_code)]
 pub fn send_segment(sport: u16, dst: [u8; 4], dport: u16, seq: u32, ack: u32, flags: u16) -> bool {
     let t = segment(sport, dport, seq, ack, flags, &[], dst);
     ip::send(dst, PROTO_TCP, &t)
@@ -95,7 +99,8 @@ pub fn handle(src: [u8; 4], t: &[u8]) {
         src[0], src[1], src[2], src[3], sport, dport, flag_names(flags), seq, ack);
     if flags & SYN != 0 && flags & ACK == 0 {
         // LISTEN -> SYN-RECEIVED, exactly like `tcp_connect` completing step 2.
-        let syn_ack = segment(dport, src, 1000, seq + 1, SYN | ACK, &[], src);
+        // Reply: our port becomes the source, the caller's port the destination.
+        let syn_ack = segment(dport, sport, 1000, seq + 1, SYN | ACK, &[], src);
         ip::send(src, PROTO_TCP, &syn_ack);
         crate::println!("[tcp] state Listen -> SynReceived (sent SYN-ACK on :{})", dport);
     }

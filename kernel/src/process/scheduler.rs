@@ -324,6 +324,26 @@ pub fn task_count() -> usize {
     SCHEDULER.lock().slots.iter().filter(|s| s.is_some()).count()
 }
 
+/// A `ps`-style snapshot: `(id, state)` for every live task.
+pub fn snapshot() -> Vec<(u32, &'static str)> {
+    SCHEDULER
+        .lock()
+        .slots
+        .iter()
+        .filter_map(|s| s.as_ref())
+        .map(|t| (t.id.0, state_name(t.state)))
+        .collect()
+}
+
+fn state_name(s: TaskState) -> &'static str {
+    match s {
+        TaskState::Ready => "ready",
+        TaskState::Running => "running",
+        TaskState::Blocked => "blocked",
+        TaskState::Zombie => "zombie",
+    }
+}
+
 /// Park the CPU forever (all tasks done / boot with none).
 fn idle() -> ! {
     loop {

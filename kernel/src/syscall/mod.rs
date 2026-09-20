@@ -23,6 +23,9 @@ pub enum SyscallNr {
     Open = 3,
     Read = 4,
     Close = 5,
+    Socket = 6,
+    Bind = 7,
+    Connect = 8,
 }
 
 /// The general-purpose registers saved by the naked `int 0x80` entry stub.
@@ -134,6 +137,9 @@ pub unsafe extern "sysv64" fn syscall_dispatch(frame: *mut SyscallFrame) {
         n if n == SyscallNr::Read as u64 => f.rax = sys_read(f.rdi, f.rsi, f.rdx),
         n if n == SyscallNr::Open as u64 => f.rax = sys_open(f.rdi),
         n if n == SyscallNr::Close as u64 => f.rax = sys_close(f.rdi),
+        n if n == SyscallNr::Socket as u64 => f.rax = sys_socket(f.rdi),
+        n if n == SyscallNr::Bind as u64 => f.rax = sys_bind(f.rdi, f.rsi),
+        n if n == SyscallNr::Connect as u64 => f.rax = sys_connect(f.rdi, f.rsi, f.rdx),
         n if n == SyscallNr::Exit as u64 => {
             crate::println!("[kernel] user program exited (code={})", f.rdi as i64);
             syscall_return_to_kernel();
@@ -182,6 +188,36 @@ unsafe fn sys_close(fd: u64) -> u64 {
     match crate::fs::close(fd as usize) {
         Ok(()) => 0,
         Err(e) => e.errno() as u64,
+    }
+}
+
+/// `socket(proto)`: allocate a socket, wrap it as a VFS inode, return its fd.
+/// "A network endpoint is a file": `read`/`write` on the fd move datagrams.
+unsafe fn sys_socket(proto: u64) -> u64 {
+    let idx = crate::net::socket::socket(proto as u8);
+    match crate::fs::install_inode(crate::net::socket::inode(idx)) {
+        Ok(fd) => fd as u64,
+        Err(e) => e.errno() as u64,
+    }
+}
+
+/// `bind(fd, port)`: attach a local UDP port to the socket behind `fd`.
+unsafe fn sys_bind(fd: u64, port: u64) -> u64 {
+    use crate::fs::vfs::FsError;
+    match crate::fs::sock_index(fd as usize) {
+        Some(idx) if crate::net::socket::bind(idx, port as u16) => 0,
+        Some(_) => FsError::InvalidArg.errno() as u64,
+        None => FsError::InvalidArg.errno() as u64,
+    }
+}
+
+/// `connect(fd, dst_ip, port)`: set the default peer (dst ip in host byte order).
+unsafe fn sys_connect(fd: u64, ip: u64, port: u64) -> u64 {
+    use crate::fs::vfs::FsError;
+    let [a, b, c, d] = (ip as u32).to_be_bytes();
+    match crate::fs::sock_index(fd as usize) {
+        Some(idx) if crate::net::socket::connect(idx, [a, b, c, d], port as u16) => 0,
+        _ => FsError::InvalidArg.errno() as u64,
     }
 }
 
