@@ -5,3 +5,7 @@ target/
 # Generated user artifacts (produced by tools/*.py)
 /user/*.elf
 /user/*.tar
+
+# IDE-generated artifacts (Qoder: plans / repowiki / cache)
+# The manual is versioned in-repo under docs/操作手册.md, not here.
+/.qoder/

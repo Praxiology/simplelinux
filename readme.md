@@ -99,9 +99,9 @@ simplelinux/            # workspace root，同时是 host runner（build.rs 产�
 
 ## 七、详细文档
 
-完整《操作手册》（各功能点的前置条件、运行步骤、测试用例、预期效果与排障表）已通过 Qoder RepoWiki 维护：
+完整《操作手册》（各功能点的前置条件、运行步骤、测试用例、预期效果与排障表）随仓库分发：
 
-> 在 IDE 中打开 **RepoWiki / 知识库 → 《操作手册》**（`.qoder/repowiki/zh/content/操作手册.md`）。
+> 见仓库内文件 **[docs/操作手册.md](docs/操作手册.md)**（在 IDE 中亦可通过 RepoWiki / 知识库查看同名《操作手册》）。
 
 ## 八、版本管理
 
